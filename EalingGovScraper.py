@@ -50,7 +50,7 @@ def write_to_csv(listOfEntities, searchTerm):
     print(str(searchTerm) + " -- Preparing To Write To CSV")
     scrapeData = {'SearchQuery':csvSearchThemeColumn,'Index': csvIndexColumn,'PageNumber': csvPageNumberColumn,"URL": csvURLColumn}
     scrapeFrame = pandas.DataFrame(scrapeData,columns = ['SearchQuery','Index','PageNumber','URL'])
-    scrapeFrame.to_csv(path_or_buf= (str(searchTerm) + 'data.csv').strip(),index=False)
+    scrapeFrame.to_csv(path_or_buf= (str(searchTerm).strip() + 'data.csv').strip(),index=False)
 
     print("Ending write_to_csv()")
 # For A Given Root Page Of The Search Table, Construct Require URLs For All Search Pages
@@ -72,8 +72,9 @@ def allSearchURLs(RootPageString,SelectorFieldToSearchForEntry,EndConditionSelec
 
     # find The Page Result Modifier Which Updates Result Numbers On Page
     select = Select(BrowserInstance.find_element_by_css_selector(r'html.js body div#idox div#pa div.container div.content div#searchfilters form#searchResults span.resultsPerPage select#resultsPerPage'))
+    time.sleep(5.0)
     select.select_by_value('100')
-    time.sleep(1.0)
+    time.sleep(5.0)
 
     # Click The Go Button To Update The Search Page with 100 Results Per Page
     BrowserInstance.find_element_by_css_selector(r'html.js body div#idox div#pa div.container div.content div#searchfilters form#searchResults input.button.primary').click()
@@ -220,7 +221,6 @@ def handleEalingGovDriver(listOfSearchKeywords,browser,Make,Model,PrioritiseMake
 
     return outputDataStructure
 
-# All 
 # Main Driver
 def main():
     # Input Search Paramater to https://pam.ealing.gov.uk/online-applications/search.do?action=advanced
