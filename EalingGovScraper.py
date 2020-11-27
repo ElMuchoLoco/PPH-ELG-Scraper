@@ -34,9 +34,28 @@ def check_exists_by_selector(selector,webdriver):
         return False
     return True
 
+def write_to_csv(listOfEntities, searchTerm):
+    print("Launching write_to_csv()")
+    csvIndexColumn = []
+    csvPageNumberColumn = []
+    csvURLColumn = []
+    csvSearchThemeColumn = []
+
+    for element in listOfEntities:
+        csvIndexColumn.append(element['Index'])
+        csvPageNumberColumn.append(element['PageNumber'])
+        csvURLColumn.append(element['URL'])
+        csvSearchThemeColumn.append(element['SearchQuery'])
+    
+    print(str(searchTerm) + " -- Preparing To Write To CSV")
+    scrapeData = {'SearchQuery':csvSearchThemeColumn,'Index': csvIndexColumn,'PageNumber': csvPageNumberColumn,"URL": csvURLColumn}
+    scrapeFrame = pandas.DataFrame(scrapeData,columns = ['SearchQuery','Index','PageNumber','URL'])
+    scrapeFrame.to_csv(path_or_buf= (str(searchTerm) + 'data.csv').strip(),index=False)
+
+    print("Ending write_to_csv()")
 # For A Given Root Page Of The Search Table, Construct Require URLs For All Search Pages
 # EndConditionSelector = r'html.js body div#idox div#pa div.container div.content div#searchResultsContainer.panel p.pager.top a.next'
-def allSearchURLs(RootPageString,SelectorFieldToSearchForEntry,EndConditionSelector,BrowserInstance):
+def allSearchURLs(RootPageString,SelectorFieldToSearchForEntry,EndConditionSelector,SearchString,BrowserInstance):
     print("Launching allSearchURLSs()")
     listOfScrapedElements = []
     # Check Whether There Is A Manual Overwrite To The Current Search Page
@@ -54,7 +73,7 @@ def allSearchURLs(RootPageString,SelectorFieldToSearchForEntry,EndConditionSelec
     # find The Page Result Modifier Which Updates Result Numbers On Page
     select = Select(BrowserInstance.find_element_by_css_selector(r'html.js body div#idox div#pa div.container div.content div#searchfilters form#searchResults span.resultsPerPage select#resultsPerPage'))
     select.select_by_value('100')
-    time.sleep(0.5)
+    time.sleep(1.0)
 
     # Click The Go Button To Update The Search Page with 100 Results Per Page
     BrowserInstance.find_element_by_css_selector(r'html.js body div#idox div#pa div.container div.content div#searchfilters form#searchResults input.button.primary').click()
@@ -67,26 +86,26 @@ def allSearchURLs(RootPageString,SelectorFieldToSearchForEntry,EndConditionSelec
         for element in BrowserInstance.find_elements_by_css_selector(SelectorFieldToSearchForEntry):
             elementCounter += 1
             # print("Found [" + str(elementCounter) + "] at [" + element.get_attribute('href') + "]")
-            listOfScrapedElements.append({'Index':str(elementCounter),'PageNumber':str(pageIterator),'URL':element.get_attribute('href')})
-            print('Index':str(elementCounter) + " --- " + 'PageNumber':str(pageIterator) + " --- " + 'URL':element.get_attribute('href'))
+            listOfScrapedElements.append({'SearchQuery':str(SearchString),'Index':str(elementCounter),'PageNumber':str(pageIterator),'URL':element.get_attribute('href')})
+            print('SearchQuery' + " --- " + str(SearchString) + " --- " + 'Index ' + "[" + str(elementCounter) + "]" + " --- " + 'PageNumber '  + "[" + str(pageIterator) + "]" + " --- " + 'URL ' + "[" + str(element.get_attribute('href')) + "]")
             #https://pam.ealing.gov.uk/online-applications/pagedSearchResults.do?action=page&searchCriteria.page=1
-
         pageIterator += 1
         BrowserInstance.get(RootPageString + str(pageIterator))
         time.sleep(4)
+    
+    return listOfScrapedElements
     # element.get_attribute('href')
     # yearProfileList.append(str(element.text).replace("YEAR\n",""))
         
 # Paramaters: {SearchButtonUID: }
-def initiateSearch(SearchButtonSelectorString, DictionaryOfKeysForSearch, SearchURL, BrowserInstance):
+def initiateSearch(SearchButtonSelectorString, ValueToInsert, SelectorToInsertInto, SearchURL, BrowserInstance):
     print("Launching initiateSearch()")
     BrowserInstance.get(SearchURL)
     print("Got Search URL Pause For 10")
     time.sleep(5)
     print("Resume")
-    for element in DictionaryOfKeysForSearch.keys():
-        print("Inserted [" + element + "] at [" + DictionaryOfKeysForSearch[element] + "]")
-        BrowserInstance.find_element_by_css_selector(DictionaryOfKeysForSearch[element]).send_keys(element)
+    print("Inserted [" + ValueToInsert + "] at [" + SelectorToInsertInto + "]")
+    BrowserInstance.find_element_by_css_selector(SelectorToInsertInto).send_keys(ValueToInsert)
     print("About To Click For Search")
     time.sleep(1)
     BrowserInstance.find_element_by_css_selector(SearchButtonSelectorString).click()
@@ -206,25 +225,30 @@ def handleEalingGovDriver(listOfSearchKeywords,browser,Make,Model,PrioritiseMake
 def main():
     # Input Search Paramater to https://pam.ealing.gov.uk/online-applications/search.do?action=advanced
     SearchButtonSelectorStringVar = r'html.js body div#idox div#pa div.container div.content div.tabcontainer form#advancedSearchForm div.buttons input.button.primary'
-    DictionaryOfKeysForSearchVar = {"Application Name":r'html.js body div#idox div#pa div.container div.content div.tabcontainer form#advancedSearchForm div#details fieldset div.caseType select#caseType'}
+    DictionaryOfKeysForSearchVar = {"Advertisement Content":r'html.js body div#idox div#pa div.container div.content div.tabcontainer form#advancedSearchForm div#details fieldset div.caseType select#caseType'
+                                    ,"Article 4 Application":r'html.js body div#idox div#pa div.container div.content div.tabcontainer form#advancedSearchForm div#details fieldset div.caseType select#caseType'}
     SearchURLVar = 'https://pam.ealing.gov.uk/online-applications/search.do?action=advanced'
     
     #Instantiate Web Browser Window
     BrowserSpawnedVar = webdriver.Chrome()
     time.sleep(5)
 
-    #LaunchSearchResults
-    initiateSearch(SearchButtonSelectorStringVar,DictionaryOfKeysForSearchVar,SearchURLVar,BrowserSpawnedVar)
-    time.sleep(5)
-
-    # 
+    # Constants For File
     RootPageStringValue = r'https://pam.ealing.gov.uk/online-applications/pagedSearchResults.do?action=page&searchCriteria.page='
     SelectorFieldForURL = r'html.js body div#idox div#pa div.container div.content div#searchResultsContainer.panel div.col-a ul#searchresults li.searchresult a'
     EndConditionSelector = r'html.js body div#idox div#pa div.container div.content div#searchResultsContainer.panel p.pager.top a.next'
 
     # Launch The Parser To Walk Over Search Results
-    allSearchURLs(RootPageStringValue,SelectorFieldForURL,EndConditionSelector,BrowserSpawnedVar)
-    # Process Search Input Into All Fields On The Search Field
+    for element in DictionaryOfKeysForSearchVar:
+        
+        #LaunchSearchResults
+        initiateSearch(SearchButtonSelectorStringVar,element,DictionaryOfKeysForSearchVar[element],SearchURLVar,BrowserSpawnedVar)
+        time.sleep(5)
+
+        scrapedEntities = allSearchURLs(RootPageStringValue,SelectorFieldForURL,EndConditionSelector,str(element),BrowserSpawnedVar)
+
+         # Process Search Outputs to CSV
+        write_to_csv(scrapedEntities, element)
 
 # Launcher
 main()
