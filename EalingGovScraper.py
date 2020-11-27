@@ -38,7 +38,7 @@ def check_exists_by_selector(selector,webdriver):
 # EndConditionSelector = r'html.js body div#idox div#pa div.container div.content div#searchResultsContainer.panel p.pager.top a.next'
 def allSearchURLs(RootPageString,SelectorFieldToSearchForEntry,EndConditionSelector,BrowserInstance):
     print("Launching allSearchURLSs()")
-
+    listOfScrapedElements = []
     # Check Whether There Is A Manual Overwrite To The Current Search Page
     # if RootPageString is None:
     #     pass
@@ -66,7 +66,9 @@ def allSearchURLs(RootPageString,SelectorFieldToSearchForEntry,EndConditionSelec
         print("CHECKING PAGE = [" + RootPageString + str(pageIterator) + "]")
         for element in BrowserInstance.find_elements_by_css_selector(SelectorFieldToSearchForEntry):
             elementCounter += 1
-            print("Found [" + str(elementCounter) + "] at [" + element.get_attribute('href') + "]")
+            # print("Found [" + str(elementCounter) + "] at [" + element.get_attribute('href') + "]")
+            listOfScrapedElements.append({'Index':str(elementCounter),'PageNumber':str(pageIterator),'URL':element.get_attribute('href')})
+            print('Index':str(elementCounter) + " --- " + 'PageNumber':str(pageIterator) + " --- " + 'URL':element.get_attribute('href'))
             #https://pam.ealing.gov.uk/online-applications/pagedSearchResults.do?action=page&searchCriteria.page=1
 
         pageIterator += 1
@@ -215,6 +217,7 @@ def main():
     initiateSearch(SearchButtonSelectorStringVar,DictionaryOfKeysForSearchVar,SearchURLVar,BrowserSpawnedVar)
     time.sleep(5)
 
+    # 
     RootPageStringValue = r'https://pam.ealing.gov.uk/online-applications/pagedSearchResults.do?action=page&searchCriteria.page='
     SelectorFieldForURL = r'html.js body div#idox div#pa div.container div.content div#searchResultsContainer.panel div.col-a ul#searchresults li.searchresult a'
     EndConditionSelector = r'html.js body div#idox div#pa div.container div.content div#searchResultsContainer.panel p.pager.top a.next'
